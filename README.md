@@ -1,4 +1,4 @@
-# ddao-tokens
+# contract-ddao-vesting
 
 ## Code coverage for Solidity testing
 
