@@ -83,8 +83,6 @@ describe("CrowdsaleVesting", function () {
             expect((await crowdsaleVesting.calculateUnlockedTokens(payer1.address, 0, oneSecondPass)).toString()).to.be.equal('10046939300411522');
         });
         it("Should return 0 as timestamp less then startDate", async function() {
-            console.log('timestamp', (await web3.eth.getBlock('latest').timestamp));
-            
             await addaoToken.connect(owner).approve(payer1.address, ethers.utils.parseEther('120000').toString());
             await addaoToken.connect(payer1).transferFrom(owner.address, payer1.address, ethers.utils.parseEther('120000').toString());
             await addaoToken.connect(payer1).approve(crowdsaleVesting.address, ethers.utils.parseEther('120000').toString());
@@ -103,6 +101,9 @@ describe("CrowdsaleVesting", function () {
         it("Should be Fail as unreach to call transfer", async function() {
             await truffleAssert.reverts(crowdsaleVesting.adminGetCoin(ethers.utils.parseEther('100').toString()), "Transaction reverted: function call failed to execute");
         });
+        // it("Should be Fail if caller is not owner", async function() {
+        //     await truffleAssert.reverts(crowdsaleVesting.adminGetCoin(ethers.utils.parseEther('100').toString()), "Transaction reverted without a reason string");
+        // });
     });
 
     describe("__increaseTime__",  function() {
@@ -111,7 +112,6 @@ describe("CrowdsaleVesting", function () {
             await increaseTime({ ethers }, ethers.BigNumber.from(oneMonth).mul(6)); // Move {{n}} months
             expect((await web3.eth.getBlock('latest')).timestamp).to.be.equal(currentTimestamp + ethers.BigNumber.from(oneMonth).mul(6).toNumber());
         });
-
     });
 
     describe("claim", function() {
@@ -126,10 +126,22 @@ describe("CrowdsaleVesting", function () {
             
             expect(Number(balanceDdaoTokenAfter)).to.be.greaterThan(Number(balanceDdaoTokenBefore));
         });
+        // it("Should be Fail if address is not included in whitelist", async function() {
+
+        // });
+        // it("Shoutd be Fail if address doesn't participate in round Seed", async function() {
+            
+        // })
+        // it("Shoutd be Fail if address doesn't participate in round Private 1", async function() {
+
+        // })
+        // it("Shoutd be Fail if address doesn't participate in round Private 2", async function() {
+
+        // })
     });
 
     describe("adminGetToken", function() {
-        it("Should send token", async function() {            
+        it("Should get any ERC20 tokens from contract to owner wallet if they are on the contract", async function() {            
             await addaoToken.connect(owner).approve(payer1.address, ethers.utils.parseEther('120000').toString());
             await addaoToken.connect(payer1).transferFrom(owner.address, payer1.address, ethers.utils.parseEther('120000').toString());
             await addaoToken.connect(payer1).approve(crowdsaleVesting.address, ethers.utils.parseEther('120000').toString());
@@ -143,6 +155,9 @@ describe("CrowdsaleVesting", function () {
             
             expect(ethers.BigNumber.from(balanceAddaoAffter).sub(balanceAddaoBefore).toString()).to.be.equal(ethers.utils.parseEther('100').toString());
         });
+        // it("Should be Fail if caller is not owner", async function() {
+
+        // });
     });
 
     describe("calculateUnlockedTokens", function() {
@@ -152,16 +167,7 @@ describe("CrowdsaleVesting", function () {
         });
     });
 
-    describe("claimTokens", function() {
-        it("Should claim and get amounts of ddao", async function() {            
-            const balanceDdaoBefore = await ddaoToken.balanceOf(owner.address);
-            const availableToClaim = await ddaoToken.balanceOf(crowdsaleVesting.address);            
-            await crowdsaleVesting.claimTokens(ddaoToken.address);            
-            expect((await ddaoToken.balanceOf(owner.address)).toString()).to.be.equal(ethers.BigNumber.from(balanceDdaoBefore).add(availableToClaim).toString());
-        });
-    });
-
-    describe("lockAddress", function() {
+    describe("lockAddress", function() { // lockAddress -->> blacklistedAddress
         it("Should be locked and could not claim", async function() {    
             await addaoToken.connect(owner).approve(payer1.address, ethers.utils.parseEther('120000').toString());
             await addaoToken.connect(payer1).transferFrom(owner.address, payer1.address, ethers.utils.parseEther('120000').toString());
@@ -172,6 +178,9 @@ describe("CrowdsaleVesting", function () {
      
             await truffleAssert.reverts(crowdsaleVesting.connect(payer1).claim(0), "CrowdsaleVesting: This wallet address has been blocked");
         });
+        // it("Should be Fail if caller is not owner", async function() {
+
+        // });
     });
 
     describe("unlockAddress", function() {
@@ -186,5 +195,8 @@ describe("CrowdsaleVesting", function () {
             await crowdsaleVesting.unlockAddress(payer1.address);            
             assert.equal(false, await crowdsaleVesting.blacklist(payer1.address));
         });
+        // it("Should be Fail if caller is not owner", async function() {
+
+        // });
     });
 });

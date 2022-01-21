@@ -33,6 +33,15 @@ contract CrowdsaleVesting is Ownable, Participants {
 
     uint256 public oneMonth = 30 days;
 
+    struct ClaimedInfo {
+        uint256 timestamp;
+        uint256 amount;
+        uint256 number;
+        bytes32 txHash;
+    }
+    mapping(address => mapping(uint256 => uint256)) public claimAddressNumber;
+    mapping(address => mapping(uint256 => ClaimedInfo)) public claimByAddress; // Should know about round
+
     constructor(
         address _ddao,
         address _addao,
@@ -44,30 +53,25 @@ contract CrowdsaleVesting is Ownable, Participants {
     }
 
     function claim(uint256 _round) public {
-        uint256 tokensToSend = availableToClaim(msg.sender, _round);
+        uint256 tokensToSend = balanceOf(msg.sender, _round);
         require(tokensToSend > 0, "CrowdsaleVesting: Nothing to claim");
 
-        require(
-            !blacklist[msg.sender],
-            "CrowdsaleVesting: This wallet address has been blocked"
-        );
+        require(!blacklist[msg.sender], "CrowdsaleVesting: This wallet address has been blocked");
 
         tokensClaimed[msg.sender][_round] += tokensToSend;
 
         addao.safeTransferFrom(msg.sender, address(this), tokensToSend);
 
         ddao.safeTransfer(msg.sender, tokensToSend);
+
+        uint256 nextNumber = claimAddressNumber[msg.sender][_round] + 1;
+        bytes32 txHash = blockhash(block.number);
+        claimByAddress[msg.sender][_round] = ClaimedInfo(block.timestamp, tokensToSend, nextNumber, txHash);
     }
 
-    function availableToClaim(address _address, uint256 _round)
-        public
-        view
-        returns (uint256)
-    {
+    function balanceOf(address _address, uint256 _round) public view returns (uint256) {
         if (calculateUnlockedTokens(_address, _round, 0) > 0) {
-            return
-                calculateUnlockedTokens(_address, _round, 0) -
-                tokensClaimed[_address][_round];
+            return calculateUnlockedTokens(_address, _round, 0) - tokensClaimed[_address][_round];
         }
         return 0;
     }
@@ -77,12 +81,7 @@ contract CrowdsaleVesting is Ownable, Participants {
         uint256 _round,
         uint256 _date
     ) public view returns (uint256) {
-        require(
-            _round == roundSeed ||
-                _round == roundPrivate1 ||
-                _round == roundPrivate2,
-            "CrowdsaleVesting: This round has not supported"
-        );
+        require(_round == roundSeed || _round == roundPrivate1 || _round == roundPrivate2, "CrowdsaleVesting: This round has not supported");
         uint256 result;
 
         uint256 timestamp;
@@ -101,54 +100,28 @@ contract CrowdsaleVesting is Ownable, Participants {
             return result;
         }
 
-        // Inner information by wallet address
-        uint256 availableAmount;
-
         if (_round == roundSeed) {
-            availableAmount = seed[_address];
-
-            uint256 secondsPassed = timestamp - (startDate + lockupPeriod);
-            secondsPassed = secondsPassed > vestingPeriodSeed * oneMonth
-                ? vestingPeriodSeed
-                : secondsPassed;
-
-            result +=
-                (availableAmount * secondsPassed) /
-                (vestingPeriodSeed * oneMonth);
+            result += availableTokenByRound(seed[_address], vestingPeriodSeed, timestamp);
         }
         if (_round == roundPrivate1) {
-            availableAmount = private1[_address];
-
-            uint256 secondsPassed = timestamp - (startDate + lockupPeriod);
-            secondsPassed = secondsPassed > vestingPeriodPrivate1 * oneMonth
-                ? vestingPeriodPrivate1
-                : secondsPassed;
-
-            result +=
-                (availableAmount * secondsPassed) /
-                (vestingPeriodPrivate1 * oneMonth);
+            result += availableTokenByRound(private1[_address], vestingPeriodPrivate1, timestamp);
         }
         if (_round == roundPrivate2) {
-            availableAmount = private2[_address];
-
-            uint256 secondsPassed = timestamp - (startDate + lockupPeriod);
-            secondsPassed = secondsPassed > vestingPeriodPrivate2 * oneMonth
-                ? vestingPeriodPrivate2
-                : secondsPassed;
-
-            result +=
-                (availableAmount * secondsPassed) /
-                (vestingPeriodPrivate2 * oneMonth);
+            result += availableTokenByRound(private2[_address], vestingPeriodPrivate2, timestamp);
         }
 
         return result;
     }
 
-    function claimTokens(address _ddao) public onlyOwner {
-        IERC20(_ddao).safeTransfer(
-            msg.sender,
-            IERC20(_ddao).balanceOf(address(this))
-        );
+    function availableTokenByRound(
+        uint256 _availableAmount,
+        uint256 _vestingPeriod,
+        uint256 _timestamp
+    ) internal view returns (uint256) {
+        uint256 secondsPassed = _timestamp - (startDate + lockupPeriod);
+        secondsPassed = secondsPassed > _vestingPeriod * oneMonth ? _vestingPeriod : secondsPassed;
+
+        return (_availableAmount * secondsPassed) / (_vestingPeriod * oneMonth);
     }
 
     function lockAddress(address _address) public onlyOwner {
@@ -159,15 +132,11 @@ contract CrowdsaleVesting is Ownable, Participants {
         blacklist[_address] = false;
     }
 
-    function adminGetCoin(uint256 amount) public onlyOwner {
-        payable(msg.sender).transfer(amount);
+    function adminGetCoin(uint256 _amount) public onlyOwner {
+        payable(msg.sender).transfer(_amount);
     }
 
-    function adminGetToken(address tokenAddress, uint256 amount)
-        public
-        onlyOwner
-    {
-        IERC20 ierc20Token = IERC20(tokenAddress);
-        ierc20Token.safeTransfer(msg.sender, amount);
+    function adminGetToken(address _tokenAddress, uint256 _amount) public onlyOwner {
+        IERC20(_tokenAddress).safeTransfer(msg.sender, _amount);
     }
 }
