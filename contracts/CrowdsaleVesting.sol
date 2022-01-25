@@ -39,23 +39,20 @@ contract CrowdsaleVesting is Ownable, Participants {
         uint256 number;
         bytes32 txHash;
     }
-    mapping(address => mapping(uint256 => uint256)) public claimAddressNumber;
-    mapping(address => mapping(uint256 => ClaimedInfo)) public claimByAddress; // Should know about round
+    mapping(uint8 => mapping(address => uint256)) public claimAddressNumber;
+    mapping(uint8 => mapping(address => mapping(uint256 => ClaimedInfo))) public claimByAddress; // Should know about round
 
-    constructor(
-        address _ddao,
-        address _addao,
-        uint256 _startDate
-    ) {
+    constructor(address _ddao, address _addao, uint256 _startDate) {
         ddao = IERC20(_ddao);
         addao = IERC20(_addao);
         startDate = _startDate;
     }
 
-    function claim(uint256 _round) public {
+    function claim(uint8 _round) public {
         uint256 tokensToSend = balanceOf(msg.sender, _round);
-        require(tokensToSend > 0, "CrowdsaleVesting: Nothing to claim");
 
+        require(seed[msg.sender] != 0 || private1[msg.sender] != 0 || private2[msg.sender] != 0, "CrowdsaleVesting: This wallet address is not in whitelist");
+        require(tokensToSend > 0, "CrowdsaleVesting: Nothing to claim");
         require(!blacklist[msg.sender], "CrowdsaleVesting: This wallet address has been blocked");
 
         tokensClaimed[msg.sender][_round] += tokensToSend;
@@ -64,12 +61,12 @@ contract CrowdsaleVesting is Ownable, Participants {
 
         ddao.safeTransfer(msg.sender, tokensToSend);
 
-        uint256 nextNumber = claimAddressNumber[msg.sender][_round] + 1;
+        uint256 nextNumber = claimAddressNumber[_round][msg.sender] + 1;
         bytes32 txHash = blockhash(block.number);
-        claimByAddress[msg.sender][_round] = ClaimedInfo(block.timestamp, tokensToSend, nextNumber, txHash);
+        claimByAddress[_round][msg.sender][nextNumber] = ClaimedInfo(block.timestamp, tokensToSend, nextNumber, txHash);
     }
 
-    function balanceOf(address _address, uint256 _round) public view returns (uint256) {
+    function balanceOf(address _address, uint8 _round) public view returns (uint256) {
         if (calculateUnlockedTokens(_address, _round, 0) > 0) {
             return calculateUnlockedTokens(_address, _round, 0) - tokensClaimed[_address][_round];
         }
@@ -78,7 +75,7 @@ contract CrowdsaleVesting is Ownable, Participants {
 
     function calculateUnlockedTokens(
         address _address,
-        uint256 _round,
+        uint8 _round,
         uint256 _date
     ) public view returns (uint256) {
         require(_round == roundSeed || _round == roundPrivate1 || _round == roundPrivate2, "CrowdsaleVesting: This round has not supported");
@@ -119,7 +116,7 @@ contract CrowdsaleVesting is Ownable, Participants {
         uint256 _timestamp
     ) internal view returns (uint256) {
         uint256 secondsPassed = _timestamp - (startDate + lockupPeriod);
-        secondsPassed = secondsPassed > _vestingPeriod * oneMonth ? _vestingPeriod : secondsPassed;
+        secondsPassed = secondsPassed > _vestingPeriod * oneMonth ? (_vestingPeriod * oneMonth) : secondsPassed;
 
         return (_availableAmount * secondsPassed) / (_vestingPeriod * oneMonth);
     }
