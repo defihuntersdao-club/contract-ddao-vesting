@@ -22,8 +22,6 @@ let payer1;
 let payer2;
 let payer3;
 let payer4;
-let account0;
-let account1;
 
 let crowdsaleVesting;
 let ddaoToken;
@@ -33,7 +31,6 @@ describe("CrowdsaleVesting", function () {
 
     beforeEach(async function() {
         [owner, payer1, payer2, payer3, payer4] = await ethers.getSigners();
-        [account0, account1] = await web3.eth.getAccounts();
 
         CrowdsaleVesting = await ethers.getContractFactory('CrowdsaleVesting');
         ERC20 = await ethers.getContractFactory('ERC20Base');
@@ -69,6 +66,14 @@ describe("CrowdsaleVesting", function () {
     describe("calculateUnlockedTokens", function() {
         it("Should not calculate. Round 100 isn't exist", async function() {
             await truffleAssert.reverts(crowdsaleVesting.calculateUnlockedTokens(payer1.address, 100, 0), "CrowdsaleVesting: This round has not supported");
+        });
+        it("Should be able to calculate even does not participate in rounds", async function() {
+            expect((await crowdsaleVesting.calculateUnlockedTokens(payer1.address, 0, 1648684800)).toString()).to.be.equal('26041666666666666666666');
+            expect((await crowdsaleVesting.calculateUnlockedTokens(payer1.address, 1, 1648684800)).toString()).to.be.equal('0');
+            expect((await crowdsaleVesting.calculateUnlockedTokens(payer1.address, 2, 1648684800)).toString()).to.be.equal('0');
+        });
+        it("Should return 0 as timestamp less than start date", async function() {
+            expect((await crowdsaleVesting.calculateUnlockedTokens(payer1.address, 2, timestamp - 1)).toString()).to.be.equal('0');
         });
 
         describe("Rounds | Should be [x] tokens available to claim in [t]", function() {
@@ -23433,7 +23438,7 @@ describe("CrowdsaleVesting", function () {
 
     describe("adminGetCoin", function() {
         it("Should be Fail as unreach to send Eth", async function() {
-            await truffleAssert.reverts(web3.eth.sendTransaction({from: account0, to: crowdsaleVesting.address, value: web3.utils.toWei('100', "ether")}), "Transaction reverted: function selector was not recognized and there's no fallback nor receive function");
+            await truffleAssert.reverts(web3.eth.sendTransaction({from: owner.address, to: crowdsaleVesting.address, value: web3.utils.toWei('100', "ether")}), "Transaction reverted: function selector was not recognized and there's no fallback nor receive function");
         });
         it("Should be Fail as unreach to call transfer", async function() {
             await truffleAssert.reverts(crowdsaleVesting.adminGetCoin(ethers.utils.parseEther('100').toString()), "Transaction reverted: function call failed to execute");
@@ -23512,10 +23517,19 @@ describe("CrowdsaleVesting", function () {
         });
     });
 
-    describe("calculateUnlockedTokens", function() {
-        it("Should return 0 due to balance", async function() {            
-            const currentTimestamp = (await web3.eth.getBlock('latest')).timestamp;
-            expect((await crowdsaleVesting.calculateUnlockedTokens(payer1.address, 0, currentTimestamp)).toString()).to.be.equal('0');
+    describe("balanceOf", function() {
+        it("Should return balance by rounds", async function() {   
+            await addaoToken.connect(owner).approve(payer1.address, ethers.utils.parseEther('120000').toString());
+            await addaoToken.connect(payer1).transferFrom(owner.address, payer1.address, ethers.utils.parseEther('120000').toString());
+            await addaoToken.connect(payer1).approve(crowdsaleVesting.address, ethers.utils.parseEther('120000').toString());
+            
+            await crowdsaleVesting.connect(payer1).claim(0);
+            const vestedAmounts = (await crowdsaleVesting.seed(payer1.address)).toString();
+            const tokensClaimed = await crowdsaleVesting.tokensClaimed(0, payer1.address);
+
+            const b = (await crowdsaleVesting.balanceOf(payer1.address)).toString();
+            const r = ethers.BigNumber.from(vestedAmounts).sub(tokensClaimed).toString();
+            expect(b).to.be.equal(r);
         });
     });
 
