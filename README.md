@@ -4,7 +4,7 @@
 
 ![coverage example][1]
 
-[1]: https://gateway.pinata.cloud/ipfs/QmZ64wdWonENLTCbXuAeXqQauoJm8n9xRdrqPNtWnPVrdb?preview=1
+[1]: https://gateway.pinata.cloud/ipfs/QmWsPDENiDASVFLc7PkSS38xPpuE7mWUHANeQp11xJUqbU?preview=1
 
 ## Available Scripts
 
