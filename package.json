@@ -6,7 +6,7 @@
   "scripts": {
     "compile": "truffle compile",
     "migrate-rinkeby": "truffle migrate --network rinkeby --f 2 -to 2 --compile-all --reset",
-    "verify-rinkeby": "truffle run verify CrowdsaleVesting ERC20Base --network rinkeby",
+    "verify-rinkeby": "truffle run verify CrowdsaleVesting --network rinkeby",
     "migrate-development": "truffle migrate --network development --f 2 -to 2 --compile-all --reset",
     "migrate-kovan": "truffle migrate --network kovan --f 2 -to 2 --compile-all --reset",
     "verify-kovan": "truffle run verify CrowdsaleVesting ERC20Base --network kovan",
@@ -25,7 +25,7 @@
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "^4.3.3",
-    "@openzeppelin/contracts-upgradeable": "^4.3.3",
+    "@openzeppelin/contracts-upgradeable": "^4.4.2",
     "@truffle/hdwallet-provider": "^1.6.0",
     "@types/mocha": "^9.0.0",
     "chai": "^4.3.4",

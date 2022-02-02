@@ -4,7 +4,7 @@
 
 ![coverage example][1]
 
-[1]: https://gateway.pinata.cloud/ipfs/QmctUagjBCrLt1QGdQVUKDWuyBSNNtT5AuZPMmzw1U2SuK?preview=1
+[1]: https://gateway.pinata.cloud/ipfs/QmUdpaWXhp6YDtpjqRK8CFaMMZSxKRtcn8DhvMLsz9Q15W?preview=1
 
 Source file - [Open](https://gateway.pinata.cloud/ipfs/QmWsPDENiDASVFLc7PkSS38xPpuE7mWUHANeQp11xJUqbU?preview=1)
 

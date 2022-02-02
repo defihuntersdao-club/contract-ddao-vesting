@@ -2,53 +2,52 @@
 
 pragma solidity 0.8.3;
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 import "./token/ERC20/IERC20.sol";
 import "./token/ERC20/SafeERC20.sol";
 import "./utils/Ownable.sol";
 import "./Participants.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @notice Allows each token to be associated with a creator.
  */
-contract CrowdsaleVesting is Ownable, Participants {
+contract CrowdsaleVesting is Ownable, Participants, ReentrancyGuard {
     using SafeERC20 for IERC20;
-    IERC20 public ddao;
-    IERC20 public addao;
+
+    // https://polygonscan.com/token/0x90F3edc7D5298918F7BB51694134b07356F7d0C7 
+    IERC20 public ddao = IERC20(0x90F3edc7D5298918F7BB51694134b07356F7d0C7);
+
+    // https://polygonscan.com/token/0xca1931c970ca8c225a3401bb472b52c46bba8382
+    IERC20 public addao = IERC20(0xCA1931C970CA8C225A3401Bb472b52C46bBa8382);
 
     mapping(uint8 => mapping(address => uint256)) public tokensClaimed;
     mapping(address => bool) public blacklist;
 
-    uint256 public roundSeed = 0;
-    uint256 public roundPrivate1 = 1;
-    uint256 public roundPrivate2 = 2;
+    uint256 constant public ROUND_SEED = 0;
+    uint256 constant public ROUND_PRIVATE_1 = 1;
+    uint256 constant public ROUND_PRIVATE_2 = 2;
 
-    uint256 public startDate;
-    uint256 public lockupPeriod = 0;
+    uint48 constant public START_DATE = 1646092800; // 1 MAR.
+
     // Vesting periods are set in months
-    uint256 public vestingPeriodSeed = 24;
-    uint256 public vestingPeriodPrivate1 = 18;
-    uint256 public vestingPeriodPrivate2 = 12;
+    uint256 constant public VESTING_PERIOD_SEED = 24;
+    uint256 constant public VESTING_PERIOD_PRIVATE_1 = 18;
+    uint256 constant public VESTING_PERIOD_PRIVATE_2 = 12;
 
     uint256 public oneMonth = 30 days;
 
     struct ClaimedInfo {
-        uint256 timestamp;
-        uint256 amount;
-        uint256 number;
-        bytes32 txHash;
+        uint48 timestamp;
+        uint256 ddaoTokenAmount;
+        uint256 claimNumber;
+        uint256 blockNumber;
     }
     mapping(uint8 => mapping(address => uint256)) public claimAddressNumber;
     mapping(uint8 => mapping(address => mapping(uint256 => ClaimedInfo))) public claimByAddress; // Should know about round
 
-    constructor(address _ddao, address _addao, uint256 _startDate) {
-        ddao = IERC20(_ddao);
-        addao = IERC20(_addao);
-        startDate = _startDate;
-    }
-
-    function claim(uint8 _round) public {
+    function claim(uint8 _round) public nonReentrant {
+        require(_round == ROUND_SEED || _round == ROUND_PRIVATE_1 || _round == ROUND_PRIVATE_2, "CrowdsaleVesting: This round has not supported");
         uint256 tokensToSend = getTokensToSend(msg.sender, _round);
 
         require(seed[msg.sender] != 0 || private1[msg.sender] != 0 || private2[msg.sender] != 0, "CrowdsaleVesting: This wallet address is not in whitelist");
@@ -62,8 +61,9 @@ contract CrowdsaleVesting is Ownable, Participants {
         ddao.safeTransfer(msg.sender, tokensToSend);
 
         uint256 nextNumber = claimAddressNumber[_round][msg.sender] + 1;
-        bytes32 txHash = blockhash(block.number);
-        claimByAddress[_round][msg.sender][nextNumber] = ClaimedInfo(block.timestamp, tokensToSend, nextNumber, txHash);
+        claimAddressNumber[_round][msg.sender] = nextNumber;
+
+        claimByAddress[_round][msg.sender][nextNumber] = ClaimedInfo(uint48(block.timestamp), tokensToSend, nextNumber, block.number);
     }
 
     function getTokensToSend(address _address, uint8 _round) view public returns (uint256) {
@@ -71,42 +71,40 @@ contract CrowdsaleVesting is Ownable, Participants {
         if (vestedAmount == 0) {
             return 0;
         }
-        if (calculateUnlockedTokens(_address, _round, 0) > 0) {
-            return calculateUnlockedTokens(_address, _round, 0) - tokensClaimed[_round][_address];
+        uint256 calc = calculateUnlockedTokens(_address, _round, 0);
+        if (calc > 0) {
+            return calc - tokensClaimed[_round][_address];
         }
         return 0;
     }
 
-    function calculateUnlockedTokens(address _address, uint8 _round, uint256 _date) public view returns (uint256) {
-        require(_round == roundSeed || _round == roundPrivate1 || _round == roundPrivate2, "CrowdsaleVesting: This round has not supported");
-        uint256 result;
+    function calculateUnlockedTokens(address _address, uint8 _round, uint48 _date) public view returns (uint256 result) {
+        require(_round == ROUND_SEED || _round == ROUND_PRIVATE_1 || _round == ROUND_PRIVATE_2, "CrowdsaleVesting: This round has not supported");
 
-        uint256 timestamp;
+        uint48 timestamp;
         if (_date != 0) {
             timestamp = _date;
         } else {
-            timestamp = block.timestamp;
+            timestamp = uint48(block.timestamp);
         }
 
-        if (timestamp <= startDate + lockupPeriod) {
+        if (timestamp <= START_DATE) {
             return result;
         }
 
-        if (_round == roundSeed) {
-            result += availableTokenByRound(seed[_address], vestingPeriodSeed, timestamp);
+        if (_round == ROUND_SEED) {
+            result += availableTokenByRound(seed[_address], VESTING_PERIOD_SEED, timestamp);
         }
-        if (_round == roundPrivate1) {
-            result += availableTokenByRound(private1[_address], vestingPeriodPrivate1, timestamp);
+        if (_round == ROUND_PRIVATE_1) {
+            result += availableTokenByRound(private1[_address], VESTING_PERIOD_PRIVATE_1, timestamp);
         }
-        if (_round == roundPrivate2) {
-            result += availableTokenByRound(private2[_address], vestingPeriodPrivate2, timestamp);
+        if (_round == ROUND_PRIVATE_2) {
+            result += availableTokenByRound(private2[_address], VESTING_PERIOD_PRIVATE_2, timestamp);
         }
-
-        return result;
     }
 
-    function availableTokenByRound(uint256 _availableAmount, uint256 _vestingPeriod, uint256 _timestamp) internal view returns (uint256) {
-        uint256 secondsPassed = _timestamp - (startDate + lockupPeriod);
+    function availableTokenByRound(uint256 _availableAmount, uint256 _vestingPeriod, uint48 _timestamp) internal view returns (uint256) {
+        uint256 secondsPassed = _timestamp - START_DATE;
         secondsPassed = secondsPassed > _vestingPeriod * oneMonth ? (_vestingPeriod * oneMonth) : secondsPassed;
 
         return (_availableAmount * secondsPassed) / (_vestingPeriod * oneMonth);
@@ -128,11 +126,9 @@ contract CrowdsaleVesting is Ownable, Participants {
         IERC20(_tokenAddress).safeTransfer(msg.sender, _amount);
     }
 
-    function balanceOf(address _address) public view returns (uint256) {
-        uint256 result;
+    function balanceOf(address _address) public view returns (uint256 result) {
         result += seed[_address] - tokensClaimed[0][_address];
         result += private1[_address] - tokensClaimed[1][_address];
         result += private2[_address] - tokensClaimed[2][_address];
-        return result;
     }
 }

@@ -41,7 +41,7 @@ describe("CrowdsaleVesting", function () {
         addaoToken = await ERC20.deploy('DEFI HUNTERS DAO Token', 'aDDAO', 18);
         await addaoToken.mint(owner.address, '5880000000000000000000000');
         
-        crowdsaleVesting = await CrowdsaleVesting.deploy(ddaoToken.address, addaoToken.address, timestamp)
+        crowdsaleVesting = await CrowdsaleVesting.deploy(ddaoToken.address, addaoToken.address)
         
         await ddaoToken.transfer(crowdsaleVesting.address, '5880000000000000000000000');
 
@@ -49,17 +49,12 @@ describe("CrowdsaleVesting", function () {
         await mintERC20Tokens(addaoToken);
     })
 
-    describe("constructor", function() {
-        it("Should set token addreses and timestamp successfully", async function() {
-            expect(await crowdsaleVesting.ddao()).to.be.equal(ddaoToken.address);
-            expect(await crowdsaleVesting.addao()).to.be.equal(addaoToken.address);
-            expect((await crowdsaleVesting.startDate()).toNumber()).to.be.equal(timestamp);
-        });
-    })
-
     describe("claim", function() {
         it("Should not claim as balance 0.", async function() {
             await truffleAssert.reverts(crowdsaleVesting.connect(payer2).claim(0), "CrowdsaleVesting: Nothing to claim");
+        });
+        it("Should not calculate. Round 100 isn't exist", async function() {
+            await truffleAssert.reverts(crowdsaleVesting.connect(payer2).claim(100), "CrowdsaleVesting: This round has not supported");
         });
     })
     
@@ -3990,7 +3985,7 @@ describe("CrowdsaleVesting", function () {
             await addaoToken.connect(payer1).transferFrom(owner.address, payer1.address, ethers.utils.parseEther('120000').toString());
             await addaoToken.connect(payer1).approve(crowdsaleVesting.address, ethers.utils.parseEther('120000').toString());
 
-            const startDatePluslockupPeriod = +(await crowdsaleVesting.startDate()) + +(await crowdsaleVesting.lockupPeriod());
+            const startDatePluslockupPeriod = +(await crowdsaleVesting.START_DATE());
             
             expect((await crowdsaleVesting.calculateUnlockedTokens(payer1.address, 0, startDatePluslockupPeriod - 1)).toString()).to.be.equal('0');
         });
