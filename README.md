@@ -1,5 +1,8 @@
 # contract-ddao-vesting
 
+Pre-Release test deploy
+https://ropsten.etherscan.io/address/0x6fed80879f39be3c6dbf6084a9129c3c063bf724#code
+
 ## Code coverage for Solidity testing
 
 ![coverage example][1]

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.3;
+pragma solidity 0.8.11;
 
-import "./utils/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @notice Allows each token to be associated with a creator.
@@ -162,6 +162,9 @@ contract Participants is Ownable {
         private2[0x498E96c727700a6B7aC2c4EfBd3E9a5DA4F0d137] = 2127659574468100000000; //  2127.6595744681 DDAO | $ 1000
         private2[0xB7c3A0928c06A80DC4A4CDc9dC0aec33E047A4c8] = 1063829787234000000000; //   1063.829787234 DDAO | $ 500
 
-        private2[0x627C125475d70bbB7eb138bd243851824c0865a1] = 53191000000000000000000; //   53.191 DDAO | $ 500
+        private2[0x627C125475d70bbB7eb138bd243851824c0865a1] = 53191000000000000000000; //   53.191 DDAO
+        // Team
+        private2[0xF1c5b7B1b212dc910b6985f7C01C74416Bcc7700] = 1680000000000000000000000; // 1680000 DDAO
+
     }
 }
