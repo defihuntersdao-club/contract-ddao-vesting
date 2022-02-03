@@ -3,6 +3,12 @@
 Pre-Release test deploy
 https://ropsten.etherscan.io/address/0x6fed80879f39be3c6dbf6084a9129c3c063bf724#code
 
+Release Deploy
+0xA9a2d6b16f3dd4c145aA8C875b9cEb8CDA3022e3
+
+https://polygonscan.com/address/0xA9a2d6b16f3dd4c145aA8C875b9cEb8CDA3022e3#code
+
+
 ## Code coverage for Solidity testing
 
 ![coverage example][1]
