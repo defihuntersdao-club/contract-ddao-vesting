@@ -3999,7 +3999,7 @@ describe("CrowdsaleVesting", function () {
             await truffleAssert.reverts(crowdsaleVesting.adminGetCoin(ethers.utils.parseEther('100').toString()), "Transaction reverted: function call failed to execute");
         });
         it("Should be Fail if caller is not owner", async function() {
-            await truffleAssert.reverts(crowdsaleVesting.connect(payer1).adminGetCoin(ethers.utils.parseEther('100').toString()), "Transaction reverted without a reason string");
+            await truffleAssert.reverts(crowdsaleVesting.connect(payer1).adminGetCoin(ethers.utils.parseEther('100').toString()), "Ownable: caller is not the owner");
         });
     });
 
@@ -4068,7 +4068,7 @@ describe("CrowdsaleVesting", function () {
             expect(ethers.BigNumber.from(balanceAddaoAffter).sub(balanceAddaoBefore).toString()).to.be.equal(ethers.utils.parseEther('100').toString());
         });
         it("Should be Fail if caller is not owner", async function() {
-            await truffleAssert.reverts(crowdsaleVesting.connect(payer1).adminGetToken(addaoToken.address, ethers.utils.parseEther('100').toString()), "Transaction reverted without a reason string");
+            await truffleAssert.reverts(crowdsaleVesting.connect(payer1).adminGetToken(addaoToken.address, ethers.utils.parseEther('100').toString()), "Ownable: caller is not the owner");
         });
     });
 
@@ -4100,7 +4100,7 @@ describe("CrowdsaleVesting", function () {
             await truffleAssert.reverts(crowdsaleVesting.connect(payer1).claim(0), "CrowdsaleVesting: This wallet address has been blocked");
         });
         it("Should be Fail if caller is not owner", async function() {
-            await truffleAssert.reverts(crowdsaleVesting.connect(payer1).lockAddress(owner.address), "Transaction reverted without a reason string");
+            await truffleAssert.reverts(crowdsaleVesting.connect(payer1).lockAddress(owner.address), "Ownable: caller is not the owner");
         });
     });
 
@@ -4117,7 +4117,7 @@ describe("CrowdsaleVesting", function () {
             assert.equal(false, await crowdsaleVesting.blacklist(payer1.address));
         });
         it("Should be Fail if caller is not owner", async function() {
-            await truffleAssert.reverts(crowdsaleVesting.connect(payer1).unlockAddress(owner.address), "Transaction reverted without a reason string");
+            await truffleAssert.reverts(crowdsaleVesting.connect(payer1).unlockAddress(owner.address), "Ownable: caller is not the owner");
         });
     });
 });

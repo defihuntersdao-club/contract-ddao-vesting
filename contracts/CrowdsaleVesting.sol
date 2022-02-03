@@ -75,7 +75,13 @@ contract CrowdsaleVesting is Ownable, Participants, ReentrancyGuard {
 
     function claim(uint8 _round) public nonReentrant {
         require(_round == ROUND_SEED || _round == ROUND_PRIVATE_1 || _round == ROUND_PRIVATE_2, "CrowdsaleVesting: This round has not supported");
-        uint256 tokensToSend = getTokensToSend(msg.sender, _round);
+
+        uint256 vestedAmount = addao.balanceOf(msg.sender);
+        
+        uint256 tokensToSend;
+        if (vestedAmount != 0) {
+            tokensToSend = getTokensToSend(msg.sender, _round);
+        } 
 
         require(seed[msg.sender] != 0 || private1[msg.sender] != 0 || private2[msg.sender] != 0, "CrowdsaleVesting: This wallet address is not in whitelist");
         require(tokensToSend > 0, "CrowdsaleVesting: Nothing to claim");
@@ -94,10 +100,6 @@ contract CrowdsaleVesting is Ownable, Participants, ReentrancyGuard {
     }
 
     function getTokensToSend(address _address, uint8 _round) view public returns (uint256) {
-        uint256 vestedAmount = addao.balanceOf(_address);
-        if (vestedAmount == 0) {
-            return 0;
-        }
         uint256 calc = calculateUnlockedTokens(_address, _round, 0);
         if (calc > 0) {
             return calc - tokensClaimed[_round][_address];
@@ -115,8 +117,9 @@ contract CrowdsaleVesting is Ownable, Participants, ReentrancyGuard {
             timestamp = uint48(block.timestamp);
         }
 
+        uint256 result;
         if (timestamp <= START_DATE) {
-            return 0;
+            return result;
         }
 
         if (_round == ROUND_SEED) {

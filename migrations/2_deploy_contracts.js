@@ -16,7 +16,7 @@ module.exports = async (deployer, network, accounts) => {
     // await addaoInstance.mint(accounts[0], '5000000000000000000000000');
     // addaoAddress = addaoInstance.address;
     
-    // let timestamp = 1646092800 // 1 Mar.
+    // await deployer.deploy(CrowdsaleVesting, ddaoAddress, addaoAddress); // For test only
     await deployer.deploy(CrowdsaleVesting);
     let crowdsaleVestingInstance = await CrowdsaleVesting.deployed();
     crowdsaleAddress = crowdsaleVestingInstance.address;
