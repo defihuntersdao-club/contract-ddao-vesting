@@ -105,7 +105,7 @@ contract CrowdsaleVesting is Ownable, Participants, ReentrancyGuard {
         return 0;
     }
 
-    function calculateUnlockedTokens(address _address, uint8 _round, uint48 _date) public view returns (uint256 result) {
+    function calculateUnlockedTokens(address _address, uint8 _round, uint48 _date) public view returns (uint256) {
         require(_round == ROUND_SEED || _round == ROUND_PRIVATE_1 || _round == ROUND_PRIVATE_2, "CrowdsaleVesting: This round has not supported");
 
         uint48 timestamp;
@@ -116,7 +116,7 @@ contract CrowdsaleVesting is Ownable, Participants, ReentrancyGuard {
         }
 
         if (timestamp <= START_DATE) {
-            result = 0;
+            return 0;
         }
 
         if (_round == ROUND_SEED) {
@@ -128,6 +128,7 @@ contract CrowdsaleVesting is Ownable, Participants, ReentrancyGuard {
         if (_round == ROUND_PRIVATE_2) {
             result += availableTokenByRound(private2[_address], VESTING_PERIOD_PRIVATE_2, timestamp);
         }
+	return result;
     }
 
     function availableTokenByRound(uint256 _availableAmount, uint256 _vestingPeriod, uint48 _timestamp) internal view returns (uint256) {
